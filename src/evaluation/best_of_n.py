@@ -1,7 +1,3 @@
-"""
-Best-of-N selection using Process Reward Model scores.
-"""
-
 from typing import List, Tuple
 import torch
 
