@@ -48,7 +48,10 @@ def run_accuracy_experiment(
         prm.to(device)
         prm.eval()
         prm_tokenizer = load_tokenizer(
-            ModelConfig(model_name=prm_config.reward_model_name)
+            ModelConfig(
+                model_name=prm_config.reward_model_name,
+                trust_remote_code=prm_config.trust_remote_code,
+            )
         )
 
     all_results = {}
@@ -88,10 +91,12 @@ def run_accuracy_experiment(
             prm_result = bench_eval.evaluate_with_prm(
                 dataset, prm, prm_tokenizer,
                 num_samples=eval_config.best_of_n,
+                aggregation=prm_config.reward_aggregation,
             )
             result["prm_best_of_n"] = {
                 "accuracy": prm_result["accuracy"],
                 "total": prm_result["total"],
+                "aggregation": prm_config.reward_aggregation,
             }
 
         all_results[benchmark] = result

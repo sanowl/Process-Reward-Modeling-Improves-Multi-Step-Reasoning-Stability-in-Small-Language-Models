@@ -28,13 +28,23 @@ Small LMs often give different answers to the same question when phrased differe
 pip install -r requirements.txt
 
 # Train PRM
-python scripts/train_prm.py --model_name microsoft/phi-2 --output_dir outputs/prm
+python scripts/train_prm.py --model_name Qwen/Qwen2.5-1.5B --output_dir outputs/prm
 
 # Run experiments
 python scripts/run_experiments.py \
-    --model_name microsoft/phi-2 \
+    --model_name Qwen/Qwen2.5-1.5B \
     --prm_checkpoint outputs/prm/prm_model.pt \
-    --benchmarks gsm8k math arc
+    --benchmarks gsm8k math arc \
+    --reward_aggregation min
+
+# Run a full study sweep
+python scripts/run_study.py \
+    --model_names Qwen/Qwen2.5-1.5B TinyLlama/TinyLlama-1.1B-Chat-v1.0 \
+    --prm_checkpoint_template outputs/{model_slug}/prm_model.pt \
+    --benchmarks gsm8k math arc \
+    --best_of_n_values 4 8 16 32 \
+    --num_paraphrases_values 3 5 8 \
+    --reward_aggregations min mean last product
 ```
 
 ## Project Structure

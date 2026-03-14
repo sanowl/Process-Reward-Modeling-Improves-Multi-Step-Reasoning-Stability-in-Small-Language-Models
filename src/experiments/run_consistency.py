@@ -61,9 +61,17 @@ def run_consistency_experiment(
         prm.to(device)
         prm.eval()
         prm_tokenizer = load_tokenizer(
-            ModelConfig(model_name=prm_config.reward_model_name)
+            ModelConfig(
+                model_name=prm_config.reward_model_name,
+                trust_remote_code=prm_config.trust_remote_code,
+            )
         )
-        selector = BestOfNSelector(prm, prm_tokenizer, device=device)
+        selector = BestOfNSelector(
+            prm,
+            prm_tokenizer,
+            aggregation=prm_config.reward_aggregation,
+            device=device,
+        )
 
     evaluator = ConsistencyEvaluator()
     all_results = {}
@@ -142,6 +150,7 @@ def run_consistency_experiment(
         if prm_answers_per_q:
             prm_metrics = evaluator.compute_consistency_metrics(prm_answers_per_q)
             prm_metrics["method"] = "prm_best_of_n"
+            prm_metrics["aggregation"] = prm_config.reward_aggregation
             result["prm"] = prm_metrics
 
             # Improvement (negative entropy_delta = improvement)

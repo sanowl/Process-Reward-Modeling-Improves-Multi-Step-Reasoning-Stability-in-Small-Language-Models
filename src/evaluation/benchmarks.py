@@ -98,7 +98,12 @@ class BenchmarkEvaluator:
         """
         from .best_of_n import BestOfNSelector
 
-        selector = BestOfNSelector(prm, prm_tokenizer, aggregation=aggregation)
+        selector = BestOfNSelector(
+            prm,
+            prm_tokenizer,
+            aggregation=aggregation,
+            device=self.device,
+        )
 
         questions = dataset["question"]
         gold_answers = dataset["answer"]

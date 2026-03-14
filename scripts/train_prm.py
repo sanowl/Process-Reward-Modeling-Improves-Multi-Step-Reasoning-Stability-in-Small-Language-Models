@@ -3,7 +3,7 @@ Script to train the Process Reward Model on reasoning traces.
 
 Usage:
     python scripts/train_prm.py \
-        --model_name microsoft/phi-2 \
+        --model_name Qwen/Qwen2.5-1.5B \
         --output_dir outputs/prm \
         --num_epochs 3 \
         --batch_size 4
@@ -28,7 +28,7 @@ from src.data.dataset_loader import load_prm_training_data
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train Process Reward Model")
-    parser.add_argument("--model_name", type=str, default="microsoft/phi-2")
+    parser.add_argument("--model_name", type=str, default="Qwen/Qwen2.5-1.5B")
     parser.add_argument("--output_dir", type=str, default="./outputs/prm")
     parser.add_argument("--num_epochs", type=int, default=3)
     parser.add_argument("--batch_size", type=int, default=4)

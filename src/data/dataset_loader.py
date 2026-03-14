@@ -7,6 +7,12 @@ from datasets import load_dataset
 from typing import Optional
 
 
+_MATH_DATASET_CANDIDATES = (
+    ("the-jb/hendrycks-math", None),
+    ("jeggers/competition_math", "original"),
+)
+
+
 def load_benchmark_dataset(benchmark: str, split: str = "test", max_samples: Optional[int] = None):
     """Load a benchmark dataset with standardized format."""
     loaders = {
@@ -24,7 +30,7 @@ def load_benchmark_dataset(benchmark: str, split: str = "test", max_samples: Opt
 
 def load_prm_training_data(max_samples: Optional[int] = None):
     """Load PRM800K-style training data for process reward model."""
-    dataset = load_dataset("openai/prm800k", "phase2_train", split="train", trust_remote_code=True)
+    dataset = load_dataset("openai/prm800k", "phase2_train", split="train")
     if max_samples is not None:
         dataset = dataset.select(range(min(max_samples, len(dataset))))
     return dataset
@@ -32,7 +38,7 @@ def load_prm_training_data(max_samples: Optional[int] = None):
 
 def _load_gsm8k(split: str):
     """Load GSM8K with standardized fields."""
-    dataset = load_dataset("openai/gsm8k", "main", split=split, trust_remote_code=True)
+    dataset = load_dataset("openai/gsm8k", "main", split=split)
 
     def _process(example):
         answer_text = example["answer"]
@@ -72,12 +78,28 @@ def _extract_boxed(text: str) -> Optional[str]:
 
 def _load_math(split: str):
     """Load MATH dataset with standardized fields."""
-    dataset = load_dataset("hendrycks/competition_math", split=split, trust_remote_code=True)
+    dataset = None
+    last_error = None
+
+    for dataset_name, config_name in _MATH_DATASET_CANDIDATES:
+        try:
+            if config_name is None:
+                dataset = load_dataset(dataset_name, split=split)
+            else:
+                dataset = load_dataset(dataset_name, config_name, split=split)
+            break
+        except Exception as exc:
+            last_error = exc
+
+    if dataset is None:
+        raise RuntimeError(
+            "Unable to load a MATH dataset from the configured Hugging Face mirrors."
+        ) from last_error
 
     def _process(example):
         solution = example["solution"]
         # Extract boxed answer with nested brace support
-        final_answer = _extract_boxed(solution)
+        final_answer = example.get("answer") or _extract_boxed(solution)
         if final_answer is None:
             final_answer = solution.split("\n")[-1]
         return {
@@ -94,7 +116,7 @@ def _load_math(split: str):
 
 def _load_arc(split: str):
     """Load ARC-Challenge with standardized fields."""
-    dataset = load_dataset("allenai/ai2_arc", "ARC-Challenge", split=split, trust_remote_code=True)
+    dataset = load_dataset("allenai/ai2_arc", "ARC-Challenge", split=split)
 
     def _process(example):
         choices = example["choices"]

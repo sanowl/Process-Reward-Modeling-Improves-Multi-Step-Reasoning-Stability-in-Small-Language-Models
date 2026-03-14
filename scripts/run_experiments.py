@@ -3,7 +3,7 @@ Run all experiments for the paper.
 
 Usage:
     python scripts/run_experiments.py \
-        --model_name microsoft/phi-2 \
+        --model_name Qwen/Qwen2.5-1.5B \
         --prm_checkpoint outputs/prm/prm_model.pt \
         --output_dir results \
         --max_samples 100
@@ -22,7 +22,7 @@ from src.experiments.run_accuracy import run_accuracy_experiment
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run PRM experiments")
-    parser.add_argument("--model_name", type=str, default="microsoft/phi-2")
+    parser.add_argument("--model_name", type=str, default="Qwen/Qwen2.5-1.5B")
     parser.add_argument("--prm_model_name", type=str, default=None,
                         help="Model name for PRM (defaults to --model_name)")
     parser.add_argument("--prm_checkpoint", type=str, default=None)
@@ -30,6 +30,12 @@ def parse_args():
     parser.add_argument("--max_samples", type=int, default=None)
     parser.add_argument("--num_paraphrases", type=int, default=5)
     parser.add_argument("--best_of_n", type=int, default=8)
+    parser.add_argument(
+        "--reward_aggregation",
+        choices=["min", "mean", "last", "product"],
+        default="min",
+        help="How to aggregate per-step PRM scores into a single trace score.",
+    )
     parser.add_argument("--benchmarks", nargs="+", default=["gsm8k", "math", "arc"])
     parser.add_argument("--experiment", choices=["consistency", "accuracy", "all"], default="all")
     return parser.parse_args()
@@ -47,7 +53,10 @@ def main():
     prm_model_name = args.prm_model_name or args.model_name
 
     model_config = ModelConfig(model_name=args.model_name)
-    prm_config = PRMConfig(reward_model_name=prm_model_name)
+    prm_config = PRMConfig(
+        reward_model_name=prm_model_name,
+        reward_aggregation=args.reward_aggregation,
+    )
     eval_config = EvalConfig(
         benchmarks=args.benchmarks,
         best_of_n=args.best_of_n,
