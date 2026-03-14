@@ -28,7 +28,8 @@ class ProcessRewardModel(nn.Module):
         # Auto-detect hidden size from model config if not specified
         if config.hidden_size is None:
             hf_config = AutoConfig.from_pretrained(
-                config.reward_model_name, trust_remote_code=True
+                config.reward_model_name,
+                trust_remote_code=config.trust_remote_code,
             )
             self.hidden_size = hf_config.hidden_size
         else:
@@ -40,9 +41,13 @@ class ProcessRewardModel(nn.Module):
 
         self.backbone = AutoModel.from_pretrained(
             config.reward_model_name,
-            trust_remote_code=True,
+            trust_remote_code=config.trust_remote_code,
             torch_dtype=torch.float16,
         )
+        if getattr(self.backbone.config, "pad_token_id", None) is None:
+            eos_token_id = getattr(self.backbone.config, "eos_token_id", None)
+            if eos_token_id is not None:
+                self.backbone.config.pad_token_id = eos_token_id
         # Match reward head dtype to backbone
         self.reward_head = nn.Sequential(
             nn.Linear(self.hidden_size, self.hidden_size // 2),

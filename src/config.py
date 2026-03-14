@@ -11,6 +11,7 @@ class ModelConfig:
     model_name: str = "microsoft/phi-2"
     tokenizer_name: Optional[str] = None
     max_length: int = 1024
+    trust_remote_code: bool = False
     use_4bit: bool = True
     use_lora: bool = True
     lora_r: int = 16
@@ -25,6 +26,7 @@ class ModelConfig:
 class PRMConfig:
     """Process Reward Model configuration."""
     reward_model_name: str = "microsoft/phi-2"
+    trust_remote_code: bool = False
     step_separator: str = "\n\n"
     positive_label: int = 1
     negative_label: int = 0

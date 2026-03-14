@@ -27,9 +27,16 @@ def load_base_model(config: ModelConfig, device_map: str = "auto"):
         config.model_name,
         quantization_config=quant_config,
         device_map=device_map,
-        trust_remote_code=True,
+        trust_remote_code=config.trust_remote_code,
         torch_dtype=None if quant_config else torch.float16,
     )
+
+    if getattr(model.config, "pad_token_id", None) is None:
+        eos_token_id = getattr(model.config, "eos_token_id", None)
+        if eos_token_id is not None:
+            model.config.pad_token_id = eos_token_id
+            if hasattr(model, "generation_config"):
+                model.generation_config.pad_token_id = eos_token_id
 
     if config.use_4bit:
         model = prepare_model_for_kbit_training(model)
@@ -53,7 +60,7 @@ def load_tokenizer(config: ModelConfig):
     """Load tokenizer with proper padding configuration."""
     tokenizer_name = config.tokenizer_name or config.model_name
     tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name, trust_remote_code=True
+        tokenizer_name, trust_remote_code=config.trust_remote_code
     )
 
     if tokenizer.pad_token is None:
