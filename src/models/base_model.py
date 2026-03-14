@@ -4,12 +4,23 @@ Load and configure base language models for reasoning and PRM training.
 
 import torch
 from transformers import (
+    AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from ..config import ModelConfig
+
+
+def _load_model_config(model_name: str, trust_remote_code: bool):
+    config = AutoConfig.from_pretrained(
+        model_name, trust_remote_code=trust_remote_code
+    )
+    if getattr(config, "pad_token_id", None) is None:
+        eos_token_id = getattr(config, "eos_token_id", None)
+        config.pad_token_id = eos_token_id if eos_token_id is not None else 0
+    return config
 
 
 def load_base_model(config: ModelConfig, device_map: str = "auto"):
@@ -23,20 +34,17 @@ def load_base_model(config: ModelConfig, device_map: str = "auto"):
             bnb_4bit_use_double_quant=True,
         )
 
+    hf_config = _load_model_config(config.model_name, config.trust_remote_code)
     model = AutoModelForCausalLM.from_pretrained(
         config.model_name,
+        config=hf_config,
         quantization_config=quant_config,
         device_map=device_map,
         trust_remote_code=config.trust_remote_code,
         torch_dtype=None if quant_config else torch.float16,
     )
-
-    if getattr(model.config, "pad_token_id", None) is None:
-        eos_token_id = getattr(model.config, "eos_token_id", None)
-        if eos_token_id is not None:
-            model.config.pad_token_id = eos_token_id
-            if hasattr(model, "generation_config"):
-                model.generation_config.pad_token_id = eos_token_id
+    if hasattr(model, "generation_config"):
+        model.generation_config.pad_token_id = hf_config.pad_token_id
 
     if config.use_4bit:
         model = prepare_model_for_kbit_training(model)

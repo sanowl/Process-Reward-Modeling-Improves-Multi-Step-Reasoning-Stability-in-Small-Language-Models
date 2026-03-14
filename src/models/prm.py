@@ -13,6 +13,16 @@ from tqdm import tqdm
 from ..config import PRMConfig, TrainingConfig
 
 
+def _load_reward_config(model_name: str, trust_remote_code: bool):
+    config = AutoConfig.from_pretrained(
+        model_name, trust_remote_code=trust_remote_code
+    )
+    if getattr(config, "pad_token_id", None) is None:
+        eos_token_id = getattr(config, "eos_token_id", None)
+        config.pad_token_id = eos_token_id if eos_token_id is not None else 0
+    return config
+
+
 class ProcessRewardModel(nn.Module):
     """
     Process Reward Model that scores each step of a reasoning trace.
@@ -26,11 +36,10 @@ class ProcessRewardModel(nn.Module):
         self.config = config
 
         # Auto-detect hidden size from model config if not specified
+        hf_config = _load_reward_config(
+            config.reward_model_name, config.trust_remote_code
+        )
         if config.hidden_size is None:
-            hf_config = AutoConfig.from_pretrained(
-                config.reward_model_name,
-                trust_remote_code=config.trust_remote_code,
-            )
             self.hidden_size = hf_config.hidden_size
         else:
             self.hidden_size = config.hidden_size
@@ -41,13 +50,10 @@ class ProcessRewardModel(nn.Module):
 
         self.backbone = AutoModel.from_pretrained(
             config.reward_model_name,
+            config=hf_config,
             trust_remote_code=config.trust_remote_code,
             torch_dtype=torch.float16,
         )
-        if getattr(self.backbone.config, "pad_token_id", None) is None:
-            eos_token_id = getattr(self.backbone.config, "eos_token_id", None)
-            if eos_token_id is not None:
-                self.backbone.config.pad_token_id = eos_token_id
         # Match reward head dtype to backbone
         self.reward_head = nn.Sequential(
             nn.Linear(self.hidden_size, self.hidden_size // 2),

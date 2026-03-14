@@ -8,7 +8,7 @@ from typing import Optional
 
 @dataclass
 class ModelConfig:
-    model_name: str = "microsoft/phi-2"
+    model_name: str = "Qwen/Qwen2.5-1.5B"
     tokenizer_name: Optional[str] = None
     max_length: int = 1024
     trust_remote_code: bool = False
@@ -25,7 +25,7 @@ class ModelConfig:
 @dataclass
 class PRMConfig:
     """Process Reward Model configuration."""
-    reward_model_name: str = "microsoft/phi-2"
+    reward_model_name: str = "Qwen/Qwen2.5-1.5B"
     trust_remote_code: bool = False
     step_separator: str = "\n\n"
     positive_label: int = 1
